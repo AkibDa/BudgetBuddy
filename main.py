@@ -34,6 +34,10 @@ def view_balance(income, expenses):
   print(f"Expenses: Rs {expenses}")
   print(f"Balance: Rs {income-expenses}")
   print("Thank you for using BudgetBuddy!")
+  
+def advice():
+  print("Advice: ")
+  print("Thank you for using BudgetBuddy!")
 
 while True:
   
@@ -53,7 +57,8 @@ while True:
     print("1. Add Transaction")
     print("2. View Balance")
     print("3. Calculate Savings")
-    print("4. Exit")
+    print("4. Need advice?")
+    print("5. Exit")
 
     choice = input("Enter your choice: ")
     
@@ -71,7 +76,10 @@ while True:
     elif choice == "3":
       savings(income, expenses)
       break
-    elif choice == "4": 
+    elif choice == "4":
+      advice()
+      break
+    elif choice == "5": 
       print("Thank you for using BudgetBuddy!")
       break
     else:
