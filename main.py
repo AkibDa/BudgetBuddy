@@ -36,7 +36,25 @@ def view_balance(income, expenses):
   print("Thank you for using BudgetBuddy!")
   
 def advice():
-  print("Advice: ")
+  prompt = input("What advie do you need? ")
+  from keys import API_KEY
+  from groq import Groq
+  
+  client = Groq(api_key=API_KEY)
+  completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "user", "content": "I need advice on " + prompt},
+                {"role": "assistant", "content": "You are a financial advisor. Advice on " + prompt},
+            ],
+            temperature=0.7,
+            max_completion_tokens=1024,
+            top_p=1,
+            stream=False
+        )
+  response = completion.choices[0].message.content
+  print(response)
+  
   print("Thank you for using BudgetBuddy!")
 
 while True:
