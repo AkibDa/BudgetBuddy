@@ -1,105 +1,112 @@
-print("Welcome to BudgetBuddy!")
+import streamlit as st
+from groq import Groq
+from keys import API_KEY  # Make sure to keep your API key secure
+
+st.title("💰 BudgetBuddy")
+st.write("Welcome to BudgetBuddy!")
+
+# Initialize session state for transactions
+if 'transactions' not in st.session_state:
+    st.session_state.transactions = []
 
 def savings(income, expenses):
-  savings = income - expenses
-  print("You have Rs " + str(savings) + " left over each month.")
-  choice = input("Would you like to save or spend this money? (save/spend): ")
-  if choice == "save":
-      savings += float(input("How much would you like to save? "))
-      print("You now have Rs " + str(savings) + " saved.")
-  elif choice == "spend":
-      savings -= float(input("How much would you like to spend? "))
-      print("You now have Rs " + str(savings) + " left over.")
-  else:
-      print("Invalid choice. Please try again.")
-      
+    savings = income - expenses
+    st.success(f"You have Rs {savings} left over each month.")
+    
+    choice = st.radio("Would you like to save or spend this money?", ("save", "spend"))
+    if choice == "save":
+        save_amount = st.number_input("How much would you like to save?", min_value=0.0, max_value=savings)
+        if st.button("Confirm Save"):
+            savings += save_amount
+            st.success(f"You now have Rs {savings} saved.")
+    elif choice == "spend":
+        spend_amount = st.number_input("How much would you like to spend?", min_value=0.0, max_value=savings)
+        if st.button("Confirm Spend"):
+            savings -= spend_amount
+            st.success(f"You now have Rs {savings} left over.")
+    
+    if savings <= 0:
+        st.error("You have run out of money!")
+    else:
+        st.success(f"You have Rs {savings} left over.")
 
-  if savings <= 0:
-      print("You have run out of money!")
-  else:
-      print("You have Rs " + str(savings) + " left over.")
-      print("Thank you for using BudgetBuddy!")
-  
 def add_transaction(date, category, amount, description, type):
-  print("Transaction added successfully!")
-  print("Date: " + date)
-  print("Category: " + category)
-  print("Amount: " + str(amount))
-  print("Description: " + description)
-  print("Type: " + type)
-  print("Thank you for using BudgetBuddy!")
-  
+    st.session_state.transactions.append({
+        "date": date,
+        "category": category,
+        "amount": amount,
+        "description": description,
+        "type": type
+    })
+    st.success("Transaction added successfully!")
+    st.write(f"Date: {date}")
+    st.write(f"Category: {category}")
+    st.write(f"Amount: Rs {amount}")
+    st.write(f"Description: {description}")
+    st.write(f"Type: {type}")
+
 def view_balance(income, expenses):
-  print(f"Income: Rs {income}")
-  print(f"Expenses: Rs {expenses}")
-  print(f"Balance: Rs {income-expenses}")
-  print("Thank you for using BudgetBuddy!")
-  
-def advice():
-  prompt = input("What advie do you need? ")
-  from keys import API_KEY
-  from groq import Groq
-  
-  client = Groq(api_key=API_KEY)
-  completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+    st.write(f"Income: Rs {income}")
+    st.write(f"Expenses: Rs {expenses}")
+    st.write(f"Balance: Rs {income - expenses}")
+
+def get_advice(prompt):
+    try:
+        client = Groq(api_key=API_KEY)
+        response = client.chat.completions.create(
+            model="llama3-70b-8192",
             messages=[
-                {"role": "user", "content": "I need advice on " + prompt},
-                {"role": "assistant", "content": "You are a financial advisor. Advice on " + prompt},
+                {"role": "system", "content": "You are a financial advisor. Provide concise, actionable advice."},
+                {"role": "user", "content": prompt}
             ],
             temperature=0.7,
-            max_completion_tokens=1024,
-            top_p=1,
-            stream=False
+            max_tokens=1024
         )
-  response = completion.choices[0].message.content
-  print(response)
-  
-  print("Thank you for using BudgetBuddy!")
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"❌ Error fetching advice: {e}"
 
-while True:
-  
-  income = float(input("Please enter your monthly income: "))
-  expenses = float(input("Please enter your monthly expenses: "))
-  
-  if income < expenses:
-    print("Your expenses are greater than your income. Please try again.")
-    break
-  elif income == expenses:
-    print("Your expenses are equal to your income. You have no money left over.")
-    break
-  elif income == 0 or expenses == 0:
-    print("You have no income or expenses. You have no money left over.")
-    break
-  else:
-    print("1. Add Transaction")
-    print("2. View Balance")
-    print("3. Calculate Savings")
-    print("4. Need advice?")
-    print("5. Exit")
+# Main Inputs
+income = st.number_input("Monthly Income (Rs)", min_value=0.0)
+expenses = st.number_input("Monthly Expenses (Rs)", min_value=0.0)
 
-    choice = input("Enter your choice: ")
-    
-    if choice == "1":
-      date = input("Date (YYYY-MM-DD): ")
-      category = input("Category: ")
-      amount = float(input("Amount: "))
-      description = input("Description: ")
-      type = input("Type (income/expense): ")
-      add_transaction(date, category, amount, description, type)
-      break
-    elif choice == "2":
-      view_balance(income, expenses)
-      break
-    elif choice == "3":
-      savings(income, expenses)
-      break
-    elif choice == "4":
-      advice()
-      break
-    elif choice == "5": 
-      print("Thank you for using BudgetBuddy!")
-      break
-    else:
-      print("Invalid choice. Please try again.")
-      break
+if income < expenses:
+    st.error("Your expenses exceed your income! Please adjust.")
+elif income == expenses:
+    st.warning("Your income equals expenses. No savings left.")
+else:
+    option = st.selectbox(
+        "Choose an action:",
+        ("Add Transaction", "View Balance", "Calculate Savings", "Get Financial Advice", "Exit")
+    )
+
+    if option == "Add Transaction":
+        with st.form("transaction_form"):
+            date = st.date_input("Date")
+            category = st.text_input("Category")
+            amount = st.number_input("Amount (Rs)", min_value=0.0)
+            description = st.text_input("Description")
+            trans_type = st.radio("Type", ("income", "expense"))
+            if st.form_submit_button("Add Transaction"):
+                add_transaction(date, category, amount, description, trans_type)
+
+    elif option == "View Balance":
+        view_balance(income, expenses)
+
+    elif option == "Calculate Savings":
+        savings(income, expenses)
+
+    elif option == "Get Financial Advice":
+        st.subheader("Need Financial Advice?")
+        prompt = st.text_input("Ask a question (e.g., 'How to save money?'):")
+
+        if st.button("Get Advice"):
+            if prompt:
+                with st.spinner("Fetching advice..."):
+                    advice = get_advice(prompt)
+                    st.markdown(f"**Advice:**\n\n{advice}")
+        else:
+            st.warning("Please enter a question!")
+
+    elif option == "Exit":
+        st.success("Thank you for using BudgetBuddy!")
