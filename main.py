@@ -1,11 +1,10 @@
 import streamlit as st
 from groq import Groq
-from keys import API_KEY  # Make sure to keep your API key secure
+from keys import API_KEY  
 
 st.title("💰 BudgetBuddy")
 st.write("Welcome to BudgetBuddy!")
 
-# Initialize session state for transactions
 if 'transactions' not in st.session_state:
     st.session_state.transactions = []
 
@@ -66,7 +65,6 @@ def get_advice(prompt):
     except Exception as e:
         return f"❌ Error fetching advice: {e}"
 
-# Main Inputs
 income = st.number_input("Monthly Income (Rs)", min_value=0.0)
 expenses = st.number_input("Monthly Expenses (Rs)", min_value=0.0)
 
